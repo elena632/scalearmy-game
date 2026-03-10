@@ -833,8 +833,13 @@
         async function saveRound(roundIndex) {
             const card = document.querySelectorAll('.card')[roundIndex];
 
+            // Extract file ID if a full Google Drive URL was pasted
+            let videoInput = card.querySelector('.drive-url').value || '';
+            const driveMatch = videoInput.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (driveMatch) { videoInput = driveMatch[1]; card.querySelector('.drive-url').value = videoInput; }
+
             const roundData = {
-                videoId: card.querySelector('.drive-url').value || '',
+                videoId: videoInput,
                 candidateName: card.querySelector('.candidate-name').value || '',
                 role: card.querySelector('.role').value || '',
                 country: card.querySelector('.country').value || '',
@@ -856,11 +861,22 @@
                 roundData.correctIndex = parseInt(correctRadio.value);
             }
 
-            let rounds = [];
-            const saved = localStorage.getItem('sa_rounds');
-            if (saved) {
-                rounds = JSON.parse(saved);
-            }
+            // Fetch ALL current rounds from Supabase first to avoid overwriting other rounds
+            let rounds = Array.from({length: 5}, () => ({
+                videoId: '', candidateName: '', role: '', country: '', flag: '',
+                hireAmount: '', savingsLine: '',
+                options: [{name:'',flag:''},{name:'',flag:''},{name:'',flag:''},{name:'',flag:''}],
+                correctIndex: 0
+            }));
+            try {
+                if(_supa) {
+                    const { data } = await _supa.from('config').select('rounds').eq('app_type', APP_TYPE).single();
+                    if(data && data.rounds && Array.isArray(data.rounds)) {
+                        data.rounds.forEach((r, i) => { if(i < 5) rounds[i] = Object.assign(rounds[i], r); });
+                    }
+                }
+            } catch(e) {}
+
             rounds[roundIndex] = roundData;
             try {
                 if(_supa) {
@@ -874,12 +890,18 @@
         }
 
         async function saveAllRounds() {
+            // Collect all 5 rounds from the form in one pass, then save once
+            const rounds = [];
             for (let i = 0; i < 5; i++) {
                 const card = document.querySelectorAll('.card')[i];
-                if (!card) continue;
+                if (!card) { rounds.push({videoId:'',candidateName:'',role:'',country:'',flag:'',hireAmount:'',savingsLine:'',options:[{name:'',flag:''},{name:'',flag:''},{name:'',flag:''},{name:'',flag:''}],correctIndex:0}); continue; }
+
+                let videoInput = card.querySelector('.drive-url').value || '';
+                const driveMatch = videoInput.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                if (driveMatch) { videoInput = driveMatch[1]; card.querySelector('.drive-url').value = videoInput; }
 
                 const roundData = {
-                    videoId: card.querySelector('.drive-url').value || '',
+                    videoId: videoInput,
                     candidateName: card.querySelector('.candidate-name').value || '',
                     role: card.querySelector('.role').value || '',
                     country: card.querySelector('.country').value || '',
@@ -900,20 +922,15 @@
                 if (correctRadio) {
                     roundData.correctIndex = parseInt(correctRadio.value);
                 }
+                rounds.push(roundData);
+            }
 
-                let rounds = [];
-                const saved = localStorage.getItem('sa_rounds');
-                if (saved) {
-                    rounds = JSON.parse(saved);
-                }
-                rounds[i] = roundData;
-                try {
+            try {
                 if(_supa) {
                     await _supa.from('config').update({ rounds, updated_at: new Date().toISOString() }).eq('app_type', APP_TYPE);
                 }
             } catch(e) {
                 localStorage.setItem('sa_rounds', JSON.stringify(rounds));
-            }
             }
 
             alert('All rounds saved successfully!');
