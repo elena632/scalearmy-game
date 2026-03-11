@@ -453,6 +453,7 @@
             }
         }
     </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- Sidebar -->
@@ -468,6 +469,9 @@
 
         <a class="nav-item" data-section="calendly" onclick="openSection('calendly')">
             🔗 Calendly Link
+        </a>
+        <a class="nav-item" data-section="logos" onclick="openSection('logos')">
+            🖼️ Client Logos
         </a>
         <a class="nav-item disabled" title="Coming soon">
             🔒 Admin Access
@@ -541,13 +545,26 @@
                     </div>
                 </div>
             </div>
+
+        <div class="section" id="logos">
+            <div style="margin-bottom:24px;">
+                <h3 style="font-size:20px; margin-bottom:8px;">Client Logos</h3>
+                <p style="color:rgba(245,240,232,0.5); font-size:14px;">Upload your client logos. They appear on the trust signals slide. PNG with transparent background works best.</p>
+            </div>
+            <div id="logo-upload-area" style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:24px;"></div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <input type="file" id="logo-file-input" accept="image/png,image/svg+xml,image/jpeg" style="display:none;" onchange="handleLogoUpload(this)" multiple>
+                <button class="btn btn-secondary" onclick="document.getElementById('logo-file-input').click()" type="button">📁 Upload Logo(s)</button>
+                <button class="btn btn-orange" onclick="saveLogos()" type="button">Save Logos</button>
+            </div>
+            <p id="logos-saved" style="color:#4ade80; margin-top:12px; opacity:0; transition:opacity .4s; font-size:14px;">✅ Logos saved!</p>
+        </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <script>
-        const _supa = window.supabase?.createClient('https://joyphdcyepmihdrkneqb.supabase.co', 'sb_publishable_VQbBQERopgFO6YLQBvOJFw_AWNtblKD');
-        const APP_TYPE = 'country';
+    <script>
+const _supa = window.supabase?.createClient('https://joyphdcyepmihdrkneqb.supabase.co', 'sb_publishable_VQbBQERopgFO6YLQBvOJFw_AWNtblKD');
+const APP_TYPE = 'hobby';
 
         const COUNTRY_FLAGS = {
             'Nigeria': '🇳🇬',
@@ -610,33 +627,36 @@
             const titles = {
                 'video-library': 'Video Library',
                 'analytics': 'Analytics',
-                'calendly': 'Calendly Link'
+                'calendly': 'Calendly Link',
+                'logos': 'Client Logos'
             };
             document.getElementById('section-name').textContent = titles[sectionName] || '';
 
             if (sectionName === 'analytics') {
                 loadAnalytics();
             }
+            if (sectionName === 'logos') {
+                loadLogosAdmin();
+            }
             if (sectionName === 'calendly') {
                 loadCalendly();
             }
         }
 
-        async function loadRounds() {
+        async async function loadRounds() {
             // Always start with 5 empty rounds as fallback
             let rounds = Array.from({length: 5}, () => ({
                     videoUrl: '',
                     candidateName: '',
                     role: '',
-                    country: '',
-                    flag: '',
+                    hobby: '',
                     hireAmount: '',
                     savingsLine: '',
                     options: [
-                        { name: '', flag: '' },
-                        { name: '', flag: '' },
-                        { name: '', flag: '' },
-                        { name: '', flag: '' }
+                        { hobby: '', emoji: '' },
+                        { hobby: '', emoji: '' },
+                        { hobby: '', emoji: '' },
+                        { hobby: '', emoji: '' }
                     ],
                     correctIndex: 0
                 }));
@@ -696,29 +716,9 @@
                     </div>
                 </div>
 
-                <div class="field-row">
-                    <div class="form-group">
-                        <label>Country</label>
-                        <select class="country" onchange="updateFlagFromCountry(this, ${roundIndex})">
-                            <option value="">Select country...</option>
-            `;
-
-            for (const [region, countries] of Object.entries(COUNTRIES)) {
-                html += `<optgroup label="${region}">`;
-                countries.forEach(country => {
-                    const selected = country === roundData.country ? 'selected' : '';
-                    html += `<option value="${country}" ${selected}>${country}</option>`;
-                });
-                html += `</optgroup>`;
-            }
-
-            html += `
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Country Flag (auto-filled)</label>
-                        <input type="text" class="flag" placeholder="🏳️" value="${roundData.flag || ''}" maxlength="2" style="text-align: center;">
-                    </div>
+                <div class="form-group">
+                    <label>Hobby (correct answer)</label>
+                    <input type="text" class="hobby" placeholder="e.g. Rock Climbing" value="${roundData.hobby || ''}">
                 </div>
 
                 <div class="field-row">
@@ -743,12 +743,12 @@
                 html += `
                     <div class="option-row">
                         <div>
-                            <label>Option ${optIndex + 1} Name</label>
-                            <input type="text" class="option-name-${roundIndex}-${optIndex}" placeholder="Candidate name" value="${opt.name || ''}">
+                            <label>Option ${optIndex + 1} Hobby</label>
+                            <input type="text" class="option-name-${roundIndex}-${optIndex}" placeholder="e.g. Rock Climbing" value="${opt.hobby || ''}">
                         </div>
                         <div>
-                            <label>Flag</label>
-                            <input type="text" class="option-flag-${roundIndex}-${optIndex} flag-input" placeholder="🏳️" value="${opt.flag || ''}" maxlength="2">
+                            <label>Emoji</label>
+                            <input type="text" class="option-flag-${roundIndex}-${optIndex} flag-input" placeholder="🎯" value="${opt.emoji || ''}" maxlength="2">
                         </div>
                         <div>
                             <label>Correct?</label>
@@ -835,8 +835,7 @@
                 videoUrl: videoInput,
                 candidateName: card.querySelector('.candidate-name').value || '',
                 role: card.querySelector('.role').value || '',
-                country: card.querySelector('.country').value || '',
-                flag: card.querySelector('.flag').value || '',
+                hobby: card.querySelector('.hobby').value || '',
                 hireAmount: card.querySelector('.hire-amount').value || '',
                 savingsLine: card.querySelector('.savings-line').value || '',
                 options: [],
@@ -844,9 +843,9 @@
             };
 
             for (let i = 0; i < 4; i++) {
-                const name = card.querySelector(`.option-name-${roundIndex}-${i}`).value || '';
-                const flag = card.querySelector(`.option-flag-${roundIndex}-${i}`).value || '';
-                roundData.options.push({ name, flag });
+                const hobby = card.querySelector(`.option-name-${roundIndex}-${i}`)?.value || '';
+                const emoji = card.querySelector(`.option-flag-${roundIndex}-${i}`)?.value || '';
+                roundData.options.push({ hobby, emoji });
             }
 
             const correctRadio = card.querySelector(`.correct-radio-${roundIndex}:checked`);
@@ -856,9 +855,9 @@
 
             // Fetch ALL current rounds from Supabase first to avoid overwriting other rounds
             let rounds = Array.from({length: 5}, () => ({
-                videoId: '', candidateName: '', role: '', country: '', flag: '',
+                videoId: '', candidateName: '', role: '', hobby: '',
                 hireAmount: '', savingsLine: '',
-                options: [{name:'',flag:''},{name:'',flag:''},{name:'',flag:''},{name:'',flag:''}],
+                options: [{hobby:'',emoji:''},{hobby:'',emoji:''},{hobby:'',emoji:''},{hobby:'',emoji:''}],
                 correctIndex: 0
             }));
             try {
@@ -875,19 +874,19 @@
                 if(_supa) {
                     await _supa.from('config').update({ rounds, updated_at: new Date().toISOString() }).eq('app_type', APP_TYPE);
                 }
-            } catch(e) {
-                localStorage.setItem('sa_rounds', JSON.stringify(rounds));
-            }
+            } catch(e) { localStorage.setItem('sa_rounds', JSON.stringify(rounds)); }
 
-            alert(`Round ${roundIndex + 1} saved successfully!`);
+            const msg = document.getElementById('save-msg');
+            if(msg) { msg.style.opacity='1'; setTimeout(()=>msg.style.opacity='0', 2000); }
+            else { alert('Round ' + (roundIndex+1) + ' saved!'); }
         }
 
         async function saveAllRounds() {
-            // Collect all 5 rounds from the form in one pass, then save once
+            // Collect all 5 rounds in one pass, then save once
             const rounds = [];
             for (let i = 0; i < 5; i++) {
                 const card = document.querySelectorAll('.card')[i];
-                if (!card) { rounds.push({videoId:'',candidateName:'',role:'',country:'',flag:'',hireAmount:'',savingsLine:'',options:[{name:'',flag:''},{name:'',flag:''},{name:'',flag:''},{name:'',flag:''}],correctIndex:0}); continue; }
+                if (!card) { rounds.push({videoId:'',candidateName:'',role:'',hobby:'',hireAmount:'',savingsLine:'',options:[{hobby:'',emoji:''},{hobby:'',emoji:''},{hobby:'',emoji:''},{hobby:'',emoji:''}],correctIndex:0}); continue; }
 
                 const videoInput = card.querySelector('.video-url').value || '';
 
@@ -895,8 +894,7 @@
                     videoUrl: videoInput,
                     candidateName: card.querySelector('.candidate-name').value || '',
                     role: card.querySelector('.role').value || '',
-                    country: card.querySelector('.country').value || '',
-                    flag: card.querySelector('.flag').value || '',
+                    hobby: card.querySelector('.hobby').value || '',
                     hireAmount: card.querySelector('.hire-amount').value || '',
                     savingsLine: card.querySelector('.savings-line').value || '',
                     options: [],
@@ -904,9 +902,9 @@
                 };
 
                 for (let j = 0; j < 4; j++) {
-                    const name = card.querySelector(`.option-name-${i}-${j}`).value || '';
-                    const flag = card.querySelector(`.option-flag-${i}-${j}`).value || '';
-                    roundData.options.push({ name, flag });
+                    const hobby = card.querySelector(`.option-name-${i}-${j}`)?.value || '';
+                    const emoji = card.querySelector(`.option-flag-${i}-${j}`)?.value || '';
+                    roundData.options.push({ hobby, emoji });
                 }
 
                 const correctRadio = card.querySelector(`.correct-radio-${i}:checked`);
@@ -920,186 +918,158 @@
                 if(_supa) {
                     await _supa.from('config').update({ rounds, updated_at: new Date().toISOString() }).eq('app_type', APP_TYPE);
                 }
-            } catch(e) {
-                localStorage.setItem('sa_rounds', JSON.stringify(rounds));
-            }
+            } catch(e) { localStorage.setItem('sa_rounds', JSON.stringify(rounds)); }
 
             alert('All rounds saved successfully!');
         }
-
         async function loadAnalytics() {
-            let analytics = [];
+            let sessions = [];
             try {
-                if(_supa) {
-                    const { data } = await _supa.from('analytics').select('*').eq('app_type', APP_TYPE).order('created_at', { ascending: false });
-                    if(data) analytics = data;
-                }
+              if(_supa) {
+                const { data } = await _supa.from('analytics').select('*').eq('app_type', APP_TYPE).order('created_at', { ascending: false });
+                if(data) sessions = data;
+              }
             } catch(e) {
-                analytics = JSON.parse(localStorage.getItem('sa_analytics') || '[]');
+              sessions = JSON.parse(localStorage.getItem('sa_analytics') || '[]');
             }
-            const analyticsContent = document.getElementById('analytics-content');
 
-            if (analytics.length === 0) {
-                analyticsContent.innerHTML = `
-                    <div class="empty-state">
-                        <div style="font-size: 48px;">📊</div>
-                        <p>No data yet. Analytics will appear here once presentations have been played.</p>
-                    </div>
-                `;
+            const container = document.getElementById('analytics-container');
+            if(!container) return;
+            container.innerHTML = '';
+
+            if(sessions.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">No analytics data yet</p>';
                 return;
             }
 
-            const totalPlays = analytics.length;
-            const conversions = analytics.filter(a => a.converted).length;
-            const avgScore = analytics.reduce((sum, a) => sum + (a.score / a.total), 0) / totalPlays;
-            const conversionRate = (conversions / totalPlays) * 100;
-
-            const byPresenter = {};
-            analytics.forEach(entry => {
-                if (!byPresenter[entry.rep]) {
-                    byPresenter[entry.rep] = {
-                        sessions: 0,
-                        totalScore: 0,
-                        totalQuestions: 0,
-                        conversions: 0
-                    };
-                }
-                byPresenter[entry.rep].sessions++;
-                byPresenter[entry.rep].totalScore += entry.score;
-                byPresenter[entry.rep].totalQuestions += entry.total;
-                if (entry.converted) byPresenter[entry.rep].conversions++;
-            });
-
-            let html = `
-                <div class="summary-grid">
-                    <div class="summary-card">
-                        <div class="number">${totalPlays}</div>
-                        <div class="label">Total Plays</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="number">${(avgScore * 100).toFixed(0)}%</div>
-                        <div class="label">Avg Score</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="number">${conversions}</div>
-                        <div class="label">Conversions</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="number">${conversionRate.toFixed(1)}%</div>
-                        <div class="label">Conversion Rate</div>
-                    </div>
-                </div>
-
-                <h3 style="margin-bottom: 20px; font-family: Georgia, serif; font-size: 18px;">Per-Presenter Breakdown</h3>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Presenter</th>
-                                <th>Sessions</th>
-                                <th>Avg Score</th>
-                                <th>Conversions</th>
-                                <th>Conv. Rate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            for (const [rep, data] of Object.entries(byPresenter)) {
-                const presenterAvgScore = (data.totalScore / data.totalQuestions) * 100;
-                const presenterConvRate = (data.conversions / data.sessions) * 100;
-                const convColor = presenterConvRate >= 50 ? 'status-green' : (presenterConvRate >= 20 ? 'status-orange' : 'status-red');
-
-                html += `
+            const table = document.createElement('table');
+            table.className = 'analytics-table';
+            table.innerHTML = `
+                <thead>
                     <tr>
-                        <td>${rep}</td>
-                        <td>${data.sessions}</td>
-                        <td>${presenterAvgScore.toFixed(0)}%</td>
-                        <td>${data.conversions}</td>
-                        <td class="${convColor}">${presenterConvRate.toFixed(1)}%</td>
+                        <th>Rep</th>
+                        <th>Score</th>
+                        <th>Total</th>
+                        <th>Date</th>
+                        <th>Converted</th>
                     </tr>
-                `;
-            }
-
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-
-                <h3 style="margin-bottom: 20px; font-family: Georgia, serif; font-size: 18px;">Session Log</h3>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Presenter</th>
-                                <th>Score</th>
-                                <th>Booked?</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                </thead>
+                <tbody>
+                    ${sessions.map(s => `
+                        <tr>
+                            <td>${s.rep || s.name || 'Anonymous'}</td>
+                            <td>${s.score || 0}</td>
+                            <td>${s.total || 0}</td>
+                            <td>${s.date || (s.created_at ? new Date(s.created_at).toLocaleDateString() : 'N/A')}</td>
+                            <td>${s.converted ? '✓' : '✗'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
             `;
-
-            const sorted = [...analytics].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            sorted.forEach(entry => {
-                const booked = entry.converted ? '✅ Yes' : '—';
-                const score = ((entry.score / entry.total) * 100).toFixed(0);
-                html += `
-                    <tr>
-                        <td>${new Date(entry.date).toLocaleDateString()}</td>
-                        <td>${entry.rep}</td>
-                        <td>${score}%</td>
-                        <td>${booked}</td>
-                    </tr>
-                `;
-            });
-
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
-            analyticsContent.innerHTML = html;
-        }
+            container.appendChild(table);
+        
+}
 
         function refreshAnalytics() {
             loadAnalytics();
         }
 
-        async function clearAnalyticsConfirm() {
-            if(!confirm('Clear ALL analytics data? This cannot be undone.')) return;
-            try {
-                if(_supa) await _supa.from('analytics').delete().eq('app_type', APP_TYPE);
-            } catch(e) {}
-            localStorage.removeItem('sa_analytics');
-            loadAnalytics();
+        function clearAnalyticsConfirm() {
+            if (confirm('Are you sure you want to clear all analytics data? This cannot be undone.')) {
+                localStorage.removeItem('sa_analytics');
+                loadAnalytics();
+                alert('All analytics data cleared.');
+            }
         }
 
         async function loadCalendly() {
-            let url = '';
-            try {
-                if(_supa) {
-                    const { data } = await _supa.from('config').select('calendly_url').eq('app_type', APP_TYPE).single();
-                    if(data) url = data.calendly_url || '';
-                }
-            } catch(e) { url = localStorage.getItem('sa_calendly') || ''; }
-            document.getElementById('calendly-url').value = url;
-            document.getElementById('calendly-current').textContent = url || 'Not set';
-        }
+    let url = '';
+    try {
+      if(_supa) {
+        const { data } = await _supa.from('config').select('calendly_url').eq('app_type', APP_TYPE).single();
+        if(data) url = data.calendly_url || '';
+      }
+    } catch(e) { url = localStorage.getItem('sa_calendly') || ''; }
+    const el = document.getElementById('calendly-url');
+    const cur = document.getElementById('calendly-current');
+    if(el) el.value = url;
+    if(cur) cur.textContent = url || 'Not set';
+
+}
 
         async function saveCalendly() {
-            const url = document.getElementById('calendly-url').value.trim();
+    const url = document.getElementById('calendly-url').value.trim();
+    try {
+      if(_supa) await _supa.from('config').update({ calendly_url: url }).eq('app_type', APP_TYPE);
+    } catch(e) { localStorage.setItem('sa_calendly', url); }
+    const cur = document.getElementById('calendly-current');
+    if(cur) cur.textContent = url || 'Not set';
+    const msg = document.getElementById('calendly-saved');
+    if(msg) { msg.style.opacity='1'; setTimeout(()=>msg.style.opacity='0', 2000); }
+
+}
+
+    
+        // ── Logo Management ──────────────────────────────────
+        let _pendingLogoUrls = [];
+
+        async function loadLogosAdmin() {
             try {
-                if(_supa) await _supa.from('config').update({ calendly_url: url }).eq('app_type', APP_TYPE);
-            } catch(e) { localStorage.setItem('sa_calendly', url); }
-            document.getElementById('calendly-current').textContent = url || 'Not set';
-            const msg = document.getElementById('calendly-saved');
-            msg.style.opacity = '1';
-            setTimeout(() => msg.style.opacity = '0', 2000);
+                if(!_supa) return;
+                const { data } = await _supa.from('config').select('logos').eq('app_type', APP_TYPE).single();
+                _pendingLogoUrls = (data && data.logos) ? [...data.logos] : [];
+                renderLogoGrid();
+            } catch(e) {}
         }
 
-    </script>
+        function renderLogoGrid() {
+            const area = document.getElementById('logo-upload-area');
+            if(!area) return;
+            if(_pendingLogoUrls.length === 0) {
+                area.innerHTML = '<p style="color:rgba(245,240,232,0.4); font-size:14px;">No logos uploaded yet.</p>';
+                return;
+            }
+            area.innerHTML = _pendingLogoUrls.map((url, i) => `
+                <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px; display:flex; flex-direction:column; align-items:center; gap:10px; min-width:120px;">
+                    <img src="${url}" style="height:48px; width:auto; max-width:120px; object-fit:contain; opacity:0.9;">
+                    <button onclick="removeLogo(${i})" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#f87171; border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;">Remove</button>
+                </div>`).join('');
+        }
+
+        function removeLogo(index) {
+            _pendingLogoUrls.splice(index, 1);
+            renderLogoGrid();
+        }
+
+        async function handleLogoUpload(input) {
+            const files = Array.from(input.files);
+            for(const file of files) {
+                const ext = file.name.split('.').pop();
+                const fileName = `logo-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+                try {
+                    const { error } = await _supa.storage.from('logos').upload(fileName, file, { upsert: true });
+                    if(error) throw error;
+                    const { data: urlData } = _supa.storage.from('logos').getPublicUrl(fileName);
+                    _pendingLogoUrls.push(urlData.publicUrl);
+                    renderLogoGrid();
+                } catch(e) {
+                    alert('Upload failed: ' + (e.message || 'unknown error'));
+                }
+            }
+            input.value = '';
+        }
+
+        async function saveLogos() {
+            try {
+                if(_supa) {
+                    await _supa.from('config').update({ logos: _pendingLogoUrls }).eq('app_type', APP_TYPE);
+                }
+                const msg = document.getElementById('logos-saved');
+                msg.style.opacity = '1';
+                setTimeout(() => msg.style.opacity = '0', 2000);
+            } catch(e) { alert('Save failed: ' + e.message); }
+        }
+
+        </script>
 </body>
 </html>
