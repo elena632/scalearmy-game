@@ -412,11 +412,11 @@ p, .body { color: var(--cream-70); }
 
     <h1 class="h1 mb-3">
       Can you guess<br>
-      <em style="color:var(--orange); font-style:italic;">their hobby?</em>
+      <em style="color:var(--orange); font-style:italic;">where they're from?</em>
     </h1>
 
     <p style="font-size:17px; line-height:1.65; max-width:400px; margin:0 auto;" class="mb-5">
-      Watch real candidates we've placed. Guess their hobby. See what our clients actually paid.
+      Watch real candidates we've placed. Guess their country. See what our clients actually paid.
     </p>
 
     <div style="margin-top:56px;">
@@ -538,7 +538,7 @@ p, .body { color: var(--cream-70); }
 
     <div class="tc mb-3">
       <h2 style="font-family:var(--serif); font-size:56px; font-weight:700; letter-spacing:-.2px; color:var(--cream);">
-        What is this candidate's hobby?
+        Where is this candidate from?
       </h2>
       <p style="font-size:13px; color:var(--cream-40); margin-top:5px;">Pick one option below</p>
     </div>
@@ -570,8 +570,8 @@ p, .body { color: var(--cream-70); }
 
     <!-- ✅ EXACT tagline — do not change -->
     <h2 class="h2 mb-3">
-      People are more than their job titles.<br>
-      <em style="color:var(--orange); font-style:italic;">Great talent has great depth!</em>
+      Surprised? - That's the point.<br>
+      <em style="color:var(--orange); font-style:italic;">Great talent is everywhere!</em>
     </h2>
 
     <p style="font-size:15px; line-height:1.65; margin-bottom:32px;" id="score-sub">
@@ -674,7 +674,26 @@ p, .body { color: var(--cream-70); }
      JAVASCRIPT
 ══════════════════════════════════════════ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
+    <script>
+
+
+const _supa = window.supabase?.createClient('https://joyphdcyepmihdrkneqb.supabase.co', 'sb_publishable_VQbBQERopgFO6YLQBvOJFw_AWNtblKD');
+const APP_TYPE = 'country';
+
+/* ── Dynamic Logos ─────────────────────────────────────── */
+async function loadLogos() {
+  try {
+    if(!_supa) return;
+    const { data } = await _supa.from('config').select('logos').eq('app_type', APP_TYPE).single();
+    const logos = (data && data.logos && data.logos.length > 0) ? data.logos : null;
+    if(!logos) return;
+    const row = document.getElementById('client-logos');
+    if(!row) return;
+    row.innerHTML = logos.map(url =>
+      `<img src="${url}" style="height:52px; width:auto; max-width:140px; object-fit:contain; opacity:0.9;" draggable="false">`
+    ).join('');
+  } catch(e) { /* keep placeholder logos on error */ }
+}
 
 /* ─────────────────────────────────────────
    ⚙️  CONFIG — PASTE YOUR DATA HERE
@@ -700,14 +719,15 @@ const CONFIG = {
       videoId:      "PASTE_GOOGLE_DRIVE_ID_1",
       candidateName:"Amara",
       role:         "Senior Developer",
-      hobby:        "Rock Climbing",
+      country:      "Kenya",
+      flag:         "🇰🇪",
       hireAmount:   "$2,800/mo",
       savingsLine:  "68% less than a comparable U.S. hire",
       options: [
-        { hobby:"Rock Climbing",  emoji:"🧗" },
-        { hobby:"Oil Painting",   emoji:"🎨" },
-        { hobby:"Chess",          emoji:"♟️" },
-        { hobby:"Salsa Dancing",  emoji:"💃" }
+        { flag:"🇰🇪", name:"Kenya",    region:"Africa"    },
+        { flag:"🇳🇬", name:"Nigeria",  region:"Africa"    },
+        { flag:"🇧🇷", name:"Brazil",   region:"LATAM"     },
+        { flag:"🇷🇴", name:"Romania",  region:"E. Europe" }
       ],
       correctIndex: 0
     },
@@ -715,61 +735,65 @@ const CONFIG = {
       videoId:      "PASTE_GOOGLE_DRIVE_ID_2",
       candidateName:"Chidi",
       role:         "Sales Manager",
-      hobby:        "DJing",
+      country:      "Nigeria",
+      flag:         "🇳🇬",
       hireAmount:   "$1,900/mo",
       savingsLine:  "71% less than a comparable U.S. hire",
       options: [
-        { hobby:"Woodworking",  emoji:"🪚" },
-        { hobby:"DJing",        emoji:"🎧" },
-        { hobby:"Surfing",      emoji:"🏄" },
-        { hobby:"Baking",       emoji:"🍞" }
+        { flag:"🇲🇽", name:"Mexico",   region:"LATAM"     },
+        { flag:"🇪🇬", name:"Egypt",    region:"Egypt"     },
+        { flag:"🇳🇬", name:"Nigeria",  region:"Africa"    },
+        { flag:"🇵🇱", name:"Poland",   region:"E. Europe" }
       ],
-      correctIndex: 1
+      correctIndex: 2
     },
     {
       videoId:      "PASTE_GOOGLE_DRIVE_ID_3",
       candidateName:"Valentina",
       role:         "Operations Lead",
-      hobby:        "Marathon Running",
+      country:      "Colombia",
+      flag:         "🇨🇴",
       hireAmount:   "$2,200/mo",
       savingsLine:  "65% less than a comparable U.S. hire",
       options: [
-        { hobby:"Marathon Running", emoji:"🏃" },
-        { hobby:"Pottery",          emoji:"🏺" },
-        { hobby:"Astronomy",        emoji:"🔭" },
-        { hobby:"Guitar",           emoji:"🎸" }
+        { flag:"🇨🇴", name:"Colombia",      region:"LATAM"     },
+        { flag:"🇿🇦", name:"South Africa",  region:"Africa"    },
+        { flag:"🇺🇦", name:"Ukraine",       region:"E. Europe" },
+        { flag:"🇪🇬", name:"Egypt",         region:"Egypt"     }
       ],
       correctIndex: 0
     },
     {
       videoId:      "PASTE_GOOGLE_DRIVE_ID_4",
-      candidateName:"Priya",
-      role:         "UI/UX Designer",
-      hobby:        "Competitive Gaming",
-      hireAmount:   "$3,100/mo",
-      savingsLine:  "73% less than a comparable U.S. hire",
+      candidateName:"Sipho",
+      role:         "UX Designer",
+      country:      "South Africa",
+      flag:         "🇿🇦",
+      hireAmount:   "$2,600/mo",
+      savingsLine:  "70% less than a comparable U.S. hire",
       options: [
-        { hobby:"Beekeeping",         emoji:"🐝" },
-        { hobby:"Competitive Gaming", emoji:"🎮" },
-        { hobby:"Scuba Diving",       emoji:"🤿" },
-        { hobby:"Knitting",           emoji:"🧶" }
+        { flag:"🇦🇷", name:"Argentina",     region:"LATAM"     },
+        { flag:"🇿🇦", name:"South Africa",  region:"Africa"    },
+        { flag:"🇷🇸", name:"Serbia",        region:"E. Europe" },
+        { flag:"🇪🇬", name:"Egypt",         region:"Egypt"     }
       ],
       correctIndex: 1
     },
     {
       videoId:      "PASTE_GOOGLE_DRIVE_ID_5",
-      candidateName:"Fatima",
-      role:         "Customer Success",
-      hobby:        "Aerial Yoga",
-      hireAmount:   "$2,600/mo",
-      savingsLine:  "74% less than a comparable U.S. hire",
+      candidateName:"Yasmine",
+      role:         "Marketing Strategist",
+      country:      "Egypt",
+      flag:         "🇪🇬",
+      hireAmount:   "$2,100/mo",
+      savingsLine:  "67% less than a comparable U.S. hire",
       options: [
-        { hobby:"Aerial Yoga",    emoji:"🧘" },
-        { hobby:"Stand-up Comedy",emoji:"🎤" },
-        { hobby:"Kite Surfing",   emoji:"🪁" },
-        { hobby:"Calligraphy",    emoji:"✍️"  }
+        { flag:"🇨🇱", name:"Chile",     region:"LATAM"     },
+        { flag:"🇧🇬", name:"Bulgaria",  region:"E. Europe" },
+        { flag:"🇬🇭", name:"Ghana",     region:"Africa"    },
+        { flag:"🇪🇬", name:"Egypt",     region:"Egypt"     }
       ],
-      correctIndex: 0
+      correctIndex: 3
     }
   ]
 };
@@ -831,30 +855,10 @@ async function preCacheAllVideos(rounds) {
 /* ─────────────────────────────────────────
    NAVIGATION
 ───────────────────────────────────────── */
-
-const _supa = window.supabase?.createClient('https://joyphdcyepmihdrkneqb.supabase.co', 'sb_publishable_VQbBQERopgFO6YLQBvOJFw_AWNtblKD');
-const APP_TYPE = 'hobby';
-
-/* ── Dynamic Logos ─────────────────────────────────────── */
-async function loadLogos() {
-  try {
-    if(!_supa) return;
-    const { data } = await _supa.from('config').select('logos').eq('app_type', APP_TYPE).single();
-    const logos = (data && data.logos && data.logos.length > 0) ? data.logos : null;
-    if(!logos) return;
-    const row = document.getElementById('client-logos');
-    if(!row) return;
-    row.innerHTML = logos.map(url =>
-      `<img src="${url}" style="height:52px; width:auto; max-width:140px; object-fit:contain; opacity:0.9;" draggable="false">`
-    ).join('');
-  } catch(e) { /* keep placeholder logos on error */ }
-}
-window.addEventListener('DOMContentLoaded', loadLogos);
-
-
 function goto(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if(id === 's-stats') loadLogos();
   ['cover','stats','r1','r2','r3','r4','score'].forEach(k =>
     document.getElementById('pb-'+k)?.classList.remove('on'));
   const map = { 's-cover':'cover','s-stats':'stats','s-score':'score',
@@ -942,9 +946,10 @@ function loadRound(i) {
   (r.options||[]).forEach((opt,idx)=>{
     const btn=document.createElement('button');
     btn.className='opt';
-    btn.innerHTML=`<span class="opt-flag">${opt.emoji||''}</span>
+    btn.innerHTML=`<span class="opt-flag">${opt.flag||''}</span>
       <span class="opt-info">
-        <span class="opt-name">${opt.hobby||''}</span>
+        <span class="opt-name">${opt.name||''}</span>
+        <span class="opt-region">${opt.region||''}</span>
       </span>`;
     btn.onclick=()=>pick(idx,btn);
     grid.appendChild(btn);
@@ -1013,13 +1018,13 @@ function doSubmit() {
 
 function showReveal(correct,r) {
   const co=r.options[r.correctIndex];
-  document.getElementById('rv-emoji').textContent = correct ? '🎯' : '🤔';
+  document.getElementById('rv-emoji').textContent = correct ? '🎯' : '🌍';
   const head=document.getElementById('rv-head');
   head.textContent = correct ? 'Correct!' : 'Not quite!';
   head.className   = 'rv-head '+(correct?'ok':'bad');
   document.getElementById('rv-sub').innerHTML = correct
-    ? `Spot on! <strong>${r.candidateName}</strong>'s hobby is <strong>${r.hobby}</strong>`
-    : `<strong>${r.candidateName}</strong>'s hobby is actually <strong>${r.hobby}</strong>`;
+    ? `Spot on! That's <strong>${r.candidateName}</strong> from <strong>${r.country} ${r.flag}</strong>`
+    : `That's <strong>${r.candidateName}</strong>, actually from <strong>${r.country} ${r.flag}</strong>`;
   document.getElementById('rv-amt').textContent  = r.hireAmount;
   document.getElementById('rv-role').textContent = r.role;
   document.getElementById('rv-note').textContent = r.savingsLine;
@@ -1091,15 +1096,17 @@ function launchConfetti() {
 /* ─────────────────────────────────────────
    ANALYTICS
 ───────────────────────────────────────── */
-function saveAnalytics() {
-  const entry = { app_type: APP_TYPE, rep: repName, score, total: activeRounds.length, date: new Date().toLocaleDateString(), answers: sessionAnswers, converted: false };
+async function saveAnalytics() {
+  const entry = { app_type: APP_TYPE, rep: repName||'Anonymous', score, total: activeRounds.length, date: new Date().toLocaleDateString(), answers: sessionAnswers.map(a=>a.correct?'✓':'✗').join(' '), converted: false };
   try {
     if(_supa) {
       const { data: inserted } = await _supa.from('analytics').insert(entry).select().single();
       window._lastAnalyticsId = inserted?.id;
     }
   } catch(e) {
-    const d = JSON.parse(localStorage.getItem('sa_analytics')||'[]'); d.push(entry); localStorage.setItem('sa_analytics', JSON.stringify(d));
+    const key='sa_analytics', data=JSON.parse(localStorage.getItem(key)||'[]');
+    data.push(entry);
+    localStorage.setItem(key,JSON.stringify(data));
   }
 }
 function openAnalytics() {
