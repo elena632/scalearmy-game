@@ -1167,8 +1167,14 @@
             try {
                 if(_supa) {
                     const ts = new Date().toISOString();
-                    const { error } = await _supa.from('config')
+                    // Try with last_updated first; fall back without it if column missing
+                    let { error } = await _supa.from('config')
                         .upsert({ app_type: APP_TYPE, logos: _pendingLogoUrls, last_updated: ts }, { onConflict: 'app_type' });
+                    if(error && error.message && error.message.includes('last_updated')) {
+                        const res = await _supa.from('config')
+                            .upsert({ app_type: APP_TYPE, logos: _pendingLogoUrls }, { onConflict: 'app_type' });
+                        error = res.error;
+                    }
                     if(error) throw error;
                 }
                 const msg = document.getElementById('logos-saved');
